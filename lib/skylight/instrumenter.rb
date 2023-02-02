@@ -321,8 +321,11 @@ module Skylight
       false
     end
 
+    NATIVE_IGNORABLE_300MS = 3000 # 300 ms
     def ignore?(trace)
-      config.ignored_endpoints.include?(trace.endpoint)
+      time_passed = Trace.normalize_time(Skylight::Util::Clock.nanos) - trace.native_get_started_at
+      config.ignored_endpoints.include?(trace.endpoint) ||
+        (config.ignored_endpoint_with_300ms.include?(trace.endpoint) && time_passed < NATIVE_IGNORABLE_300MS)
     end
 
     # Because GraphQL can return multiple results, each of which

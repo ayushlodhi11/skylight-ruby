@@ -49,6 +49,7 @@ module Skylight
       -"ENABLE_SIDEKIQ" => :enable_sidekiq,
       -"IGNORED_ENDPOINT" => :ignored_endpoint,
       -"IGNORED_ENDPOINTS" => :ignored_endpoints,
+      -"IGNORED_ENDPOINT_WITH_300MS" => :ignored_endpoint_with_300ms,
       -"SINATRA_ROUTE_PREFIXES" => :sinatra_route_prefixes,
       -"ENABLE_SOURCE_LOCATIONS" => :enable_source_locations,
       # == Max Span Handling ==
@@ -494,6 +495,22 @@ module Skylight
 
           val = Array(get(:ignored_endpoint))
           val.concat(Array(ignored_endpoints))
+          val
+        end
+    end
+
+    # @api private
+    def ignored_endpoint_with_300ms
+      @ignored_endpoint_with_300ms ||=
+        begin
+          ignored_endpoint_with_300ms = get(:ignored_endpoint_with_300ms)
+
+          # If, for some odd reason you have a comma in your endpoint name, use the
+          # YML config instead.
+          ignored_endpoint_with_300ms = ignored_endpoint_with_300ms.split(/\s*,\s*/) if ignored_endpoint_with_300ms.is_a?(String)
+
+          val = Array(get(:ignored_endpoint))
+          val.concat(Array(ignored_endpoint_with_300ms))
           val
         end
     end
