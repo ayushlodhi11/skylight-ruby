@@ -1,3 +1,7 @@
+## 5.3.4.1 (October 17, 2022)
+
+- [IMPROVEMENT] Added configuration to ignore endpoints will < 300 ms 
+
 ## 5.3.4 (October 17, 2022)
 
 - [BUGFIX] Fix a middleware response method that was incompatible with Puma >= 6.
