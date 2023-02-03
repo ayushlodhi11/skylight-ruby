@@ -27,6 +27,8 @@ module Skylight
       -"ROOT" => :root,
       -"HOSTNAME" => :hostname,
       -"SESSION_TOKEN" => :session_token,
+      -"ENABLE_IGNORE_ALL_ENDPOINT_WITH_TIMELIMIT" => :enable_ignore_all_endpoint_with_timelimit,
+      -"IGNORE_ENDPOINT_TIMELIMIT" => :ignore_endpoint_timelimit, # in ms
       # == Component settings ==
       -"ENV" => :env,
       -"COMPONENT" => :component,
@@ -49,7 +51,7 @@ module Skylight
       -"ENABLE_SIDEKIQ" => :enable_sidekiq,
       -"IGNORED_ENDPOINT" => :ignored_endpoint,
       -"IGNORED_ENDPOINTS" => :ignored_endpoints,
-      -"IGNORED_ENDPOINT_WITH_300MS" => :ignored_endpoint_with_300ms,
+      -"IGNORED_ENDPOINT_WITH_TIMELIMIT" => :ignored_endpoint_with_timelimit,
       -"SINATRA_ROUTE_PREFIXES" => :sinatra_route_prefixes,
       -"ENABLE_SOURCE_LOCATIONS" => :enable_source_locations,
       # == Max Span Handling ==
@@ -137,6 +139,8 @@ module Skylight
             enable_sidekiq: false,
             sinatra_route_prefixes: false,
             enable_source_locations: true,
+            enable_ignore_all_endpoint_with_timelimit: false,
+            ignore_endpoint_timelimit: 50, # in ms
             # Deploys
             "heroku.dyno_info_path": -"/etc/heroku/dyno",
             report_rails_env: true,
@@ -500,17 +504,17 @@ module Skylight
     end
 
     # @api private
-    def ignored_endpoint_with_300ms
-      @ignored_endpoint_with_300ms ||=
+    def ignored_endpoint_with_timelimit
+      @ignored_endpoint_with_timelimit ||=
         begin
-          ignored_endpoint_with_300ms = get(:ignored_endpoint_with_300ms)
+          ignored_endpoint_with_timelimit = get(:ignored_endpoint_with_timelimit)
 
           # If, for some odd reason you have a comma in your endpoint name, use the
           # YML config instead.
-          ignored_endpoint_with_300ms = ignored_endpoint_with_300ms.split(/\s*,\s*/) if ignored_endpoint_with_300ms.is_a?(String)
+          ignored_endpoint_with_timelimit = ignored_endpoint_with_timelimit.split(/\s*,\s*/) if ignored_endpoint_with_timelimit.is_a?(String)
 
           val = Array(get(:ignored_endpoint))
-          val.concat(Array(ignored_endpoint_with_300ms))
+          val.concat(Array(ignored_endpoint_with_timelimit))
           val
         end
     end
@@ -556,6 +560,10 @@ module Skylight
       get(:native_log_level).to_s.downcase
     end
 
+    def ignore_endpoint_timelimit
+      get(:ignore_endpoint_timelimit).to_i
+    end
+
     def logger
       @logger ||= MUTEX.synchronize { load_logger }
     end
@@ -594,6 +602,10 @@ module Skylight
 
     def enable_sidekiq?
       !!get(:enable_sidekiq)
+    end
+
+    def enable_ignore_all_endpoint_with_timelimit?
+      !!get(:enable_ignore_all_endpoint_with_timelimit)
     end
 
     def sinatra_route_prefixes?
