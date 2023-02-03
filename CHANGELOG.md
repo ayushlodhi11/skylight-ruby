@@ -1,10 +1,10 @@
-## 5.3.4.2 (February 3, 2023)
+## 5.3.4.3 (February 3, 2023)
 
 - [IMPROVEMENT] Added configuration to set time limit for ignoring endpoints
 - [IMPROVEMENT] Added configuration to ignore endpoints will time limit
 - [IMPROVEMENT] Added spec
 
-## 5.3.4.1 (February 2, 2023)
+## 5.3.4.2 (February 2, 2023)
 
 - [IMPROVEMENT] Added configuration to ignore endpoints will < 300 ms 
 
