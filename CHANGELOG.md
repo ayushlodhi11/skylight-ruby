@@ -1,3 +1,7 @@
+## 5.3.4.4 (February 21, 2023)
+
+- [IMPROVEMENT] Added configuration to set multiple time limit for ignoring endpoints
+
 ## 5.3.4.3 (February 3, 2023)
 
 - [IMPROVEMENT] Added configuration to set time limit for ignoring endpoints
