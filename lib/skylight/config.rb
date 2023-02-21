@@ -28,6 +28,7 @@ module Skylight
       -"HOSTNAME" => :hostname,
       -"SESSION_TOKEN" => :session_token,
       -"IGNORE_ALL_ENDPOINT_WITH_TIMELIMIT" => :ignore_all_endpoint_with_timelimit,
+      -"ENABLE_IGNORE_ALL_ENDPOINT_WITH_TIMELIMIT" => :enable_ignore_all_endpoint_with_timelimit,
       # == Component settings ==
       -"ENV" => :env,
       -"COMPONENT" => :component,
@@ -138,6 +139,7 @@ module Skylight
             enable_sidekiq: false,
             sinatra_route_prefixes: false,
             enable_source_locations: true,
+            enable_ignore_all_endpoint_with_timelimit: false,
             ignore_all_endpoint_with_timelimit: 0, # in ms
             # Deploys
             "heroku.dyno_info_path": -"/etc/heroku/dyno",
@@ -508,6 +510,7 @@ module Skylight
           ignored_endpoints_with_timelimit = get(:ignored_endpoints_with_timelimit)
           ignored_endpoints_with_timelimit_hash = {}
           Array(ignored_endpoints_with_timelimit).each do |ignored_endpoint_config|
+            ignored_endpoint_config = HashWithIndifferentAccess.new(ignored_endpoint_config)
             next unless ignored_endpoint_config[:time]
             # If, for some odd reason you have a comma in your endpoint name, use the
             # YML config instead.
@@ -564,7 +567,7 @@ module Skylight
 
     # ignore all if ignore_all_endpoint_with_timelimit is set and non zero
     def ignore_all_endpoint_with_timelimit?
-      ignore_all_endpoint_with_timelimit > 0
+      !!get(:enable_ignore_all_endpoint_with_timelimit)
     end
 
     def ignore_all_endpoint_with_timelimit
