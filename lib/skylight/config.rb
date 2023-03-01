@@ -27,6 +27,8 @@ module Skylight
       -"ROOT" => :root,
       -"HOSTNAME" => :hostname,
       -"SESSION_TOKEN" => :session_token,
+      -"IGNORE_ALL_ENDPOINT_WITH_TIMELIMIT" => :ignore_all_endpoint_with_timelimit,
+      -"ENABLE_IGNORE_ALL_ENDPOINT_WITH_TIMELIMIT" => :enable_ignore_all_endpoint_with_timelimit,
       # == Component settings ==
       -"ENV" => :env,
       -"COMPONENT" => :component,
@@ -49,6 +51,7 @@ module Skylight
       -"ENABLE_SIDEKIQ" => :enable_sidekiq,
       -"IGNORED_ENDPOINT" => :ignored_endpoint,
       -"IGNORED_ENDPOINTS" => :ignored_endpoints,
+      -"IGNORED_ENDPOINTS_WITH_TIMELIMIT" => :ignored_endpoints_with_timelimit,
       -"SINATRA_ROUTE_PREFIXES" => :sinatra_route_prefixes,
       -"ENABLE_SOURCE_LOCATIONS" => :enable_source_locations,
       # == Max Span Handling ==
@@ -136,6 +139,8 @@ module Skylight
             enable_sidekiq: false,
             sinatra_route_prefixes: false,
             enable_source_locations: true,
+            enable_ignore_all_endpoint_with_timelimit: false,
+            ignore_all_endpoint_with_timelimit: 0, # in ms
             # Deploys
             "heroku.dyno_info_path": -"/etc/heroku/dyno",
             report_rails_env: true,
@@ -499,6 +504,27 @@ module Skylight
     end
 
     # @api private
+    def ignored_endpoints_with_timelimit
+      @ignored_endpoints_with_timelimit ||=
+        begin
+          ignored_endpoints_with_timelimit = get(:ignored_endpoints_with_timelimit)
+          ignored_endpoints_with_timelimit_hash = {}
+          Array(ignored_endpoints_with_timelimit).each do |ignored_endpoint_config|
+            ignored_endpoint_config = HashWithIndifferentAccess.new(ignored_endpoint_config)
+            next unless ignored_endpoint_config[:time]
+            # If, for some odd reason you have a comma in your endpoint name, use the
+            # YML config instead.
+            ignored_endpoint_config[:endpoints] = ignored_endpoint_config[:endpoints].split(/\s*,\s*/) if ignored_endpoint_config[:endpoints].is_a?(String)
+
+            Array(ignored_endpoint_config[:endpoints]).each do |endpoint|
+              ignored_endpoints_with_timelimit_hash[endpoint] = ignored_endpoint_config[:time].to_i
+            end
+          end
+          ignored_endpoints_with_timelimit_hash
+        end
+    end
+
+    # @api private
     def source_location_ignored_gems
       @source_location_ignored_gems ||=
         begin
@@ -537,6 +563,15 @@ module Skylight
 
     def native_log_level
       get(:native_log_level).to_s.downcase
+    end
+
+    # ignore all if ignore_all_endpoint_with_timelimit is set and non zero
+    def ignore_all_endpoint_with_timelimit?
+      !!get(:enable_ignore_all_endpoint_with_timelimit)
+    end
+
+    def ignore_all_endpoint_with_timelimit
+      get(:ignore_all_endpoint_with_timelimit).to_i
     end
 
     def logger

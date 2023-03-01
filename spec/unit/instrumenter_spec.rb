@@ -401,6 +401,148 @@ describe "Skylight::Instrumenter", :http, :agent do
         expect(server.reports[0].endpoints.map(&:name)).to eq(["foo#bar"])
       end
 
+      it "ignores multiple endpoints with timelimit" do
+        config[:ignored_endpoints_with_timelimit] = [{time: 2000, endpoints: %w[foo#heartbeat bar#heartbeat]}]
+        Skylight::Instrumenter.new(config)
+
+        Skylight.trace "foo#bar", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "foo#heartbeat", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "bar#heartbeat", "app.rack" do
+          clock.skip 6
+        end
+
+        clock.unfreeze
+        server.wait resource: "/report"
+        expect(server.reports[0]).to have(2).endpoints
+        expect(server.reports[0].endpoints.map(&:name)).to match_array(["foo#bar", "bar#heartbeat"])
+      end
+
+      it "ignores multiple endpoints with multiple timelimit with string and symbol keys" do
+        config[:ignored_endpoints_with_timelimit] = [
+          {time: 4000, endpoints: %w[foo#heartbeat bar#heartbeat baz#heartbeat]},
+          {"time" => 6000, "endpoints" => %w[foo#exec bar#exec baz#exec]},
+        ]
+        Skylight::Instrumenter.new(config)
+
+        Skylight.trace "foo#bar", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "foo#heartbeat", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "bar#heartbeat", "app.rack" do
+          clock.skip 3
+        end
+
+        Skylight.trace "baz#heartbeat", "app.rack" do
+          clock.skip 7
+        end
+
+        Skylight.trace "foo#exec", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "bar#exec", "app.rack" do
+          clock.skip 3
+        end
+
+        Skylight.trace "baz#exec", "app.rack" do
+          clock.skip 7
+        end
+
+        clock.unfreeze
+        server.wait resource: "/report"
+        expect(server.reports[0]).to have(3).endpoints
+        expect(server.reports[0].endpoints.map(&:name)).to match_array(["foo#bar", "baz#heartbeat", "baz#exec"])
+      end
+
+      it "ignore config if time is not present in ignored_endpoints_with_timelimit" do
+        config[:ignored_endpoints_with_timelimit] = [
+          {endpoints: %w[foo#heartbeat bar#heartbeat]},
+        ]
+        Skylight::Instrumenter.new(config)
+
+        Skylight.trace "foo#bar", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "foo#heartbeat", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "bar#heartbeat", "app.rack" do
+          clock.skip 3
+        end
+        clock.unfreeze
+        server.wait resource: "/report"
+        expect(server.reports[0]).to have(3).endpoints
+        expect(server.reports[0].endpoints.map(&:name)).to match_array(["foo#bar", "foo#heartbeat", "bar#heartbeat"])
+      end
+
+      it "does not ignores all endpoints with timelimit if config disabled" do
+        config[:ignored_endpoints_with_timelimit] = [{time: 2000, endpoints: %w[foo#heartbeat bar#heartbeat]}]
+        config[:enable_ignore_all_endpoint_with_timelimit] = false
+        config[:ignore_all_endpoint_with_timelimit] = 2000
+        Skylight::Instrumenter.new(config)
+
+        Skylight.trace "foo#bar", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "foo#heartbeat", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "bar#heartbeat", "app.rack" do
+          clock.skip 6
+        end
+
+        Skylight.trace "baz#heartbeat", "app.rack" do
+          clock.skip 6
+        end
+
+        clock.unfreeze
+        server.wait resource: "/report"
+        expect(server.reports[0]).to have(3).endpoints
+        expect(server.reports[0].endpoints.map(&:name).sort).to eq(["foo#bar", "bar#heartbeat", "baz#heartbeat"].sort)
+      end
+
+      it "ignores all endpoints with timelimit" do
+        config[:ignored_endpoints_with_timelimit] = [{time: 2000, endpoints: %w[foo#heartbeat bar#heartbeat]}]
+        config[:enable_ignore_all_endpoint_with_timelimit] = true
+        config[:ignore_all_endpoint_with_timelimit] = 2000
+        Skylight::Instrumenter.new(config)
+
+        Skylight.trace "foo#bar", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "foo#heartbeat", "app.rack" do
+          clock.skip 1
+        end
+
+        Skylight.trace "bar#heartbeat", "app.rack" do
+          clock.skip 6
+        end
+
+        Skylight.trace "baz#heartbeat", "app.rack" do
+          clock.skip 6
+        end
+
+        clock.unfreeze
+        server.wait resource: "/report"
+        expect(server.reports[0]).to have(2).endpoints
+        expect(server.reports[0].endpoints.map(&:name).sort).to eq(["bar#heartbeat", "baz#heartbeat"].sort)
+      end
+
       describe "#mute" do
         def spans
           server.reports[0].endpoints[0].traces[0].spans

@@ -1,3 +1,17 @@
+## 5.3.4.5 (February 21, 2023)
+
+- [IMPROVEMENT] Added configuration to set multiple time limit for ignoring endpoints
+
+## 5.3.4.3 (February 3, 2023)
+
+- [IMPROVEMENT] Added configuration to set time limit for ignoring endpoints
+- [IMPROVEMENT] Added configuration to ignore endpoints will time limit
+- [IMPROVEMENT] Added spec
+
+## 5.3.4.2 (February 2, 2023)
+
+- [IMPROVEMENT] Added configuration to ignore endpoints will < 300 ms 
+
 ## 5.3.4 (October 17, 2022)
 
 - [BUGFIX] Fix a middleware response method that was incompatible with Puma >= 6.
